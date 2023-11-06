@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details. */
 #include "storage/db/db.h"
 
 RC CreateTableExecutor::execute(SQLStageEvent *sql_event)
+
 {
   Stmt *stmt = sql_event->stmt();
   Session *session = sql_event->session_event()->session();
