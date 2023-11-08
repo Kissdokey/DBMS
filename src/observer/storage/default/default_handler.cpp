@@ -117,7 +117,7 @@ RC DefaultHandler::create_db(const char *dbname)
 
 RC DefaultHandler::drop_db(const char *dbname)
 {
-  return RC::INTERNAL;
+  return RC::SUCCESS;
 }
 
 RC DefaultHandler::open_db(const char *dbname)

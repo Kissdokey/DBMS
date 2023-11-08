@@ -13,8 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #pragma once
-
 #include <functional>
+#include "storage/common/meta_util.h"
 #include "storage/table/table_meta.h"
 
 struct RID;
@@ -53,6 +53,7 @@ public:
             const char *base_dir, 
             int attribute_count, 
             const AttrInfoSqlNode attributes[]);
+  RC destroy(const char* dir);
 
   /**
    * 打开一个表
@@ -77,6 +78,8 @@ public:
    */
   RC insert_record(Record &record);
   RC delete_record(const Record &record);
+  RC update_record(Trx *trx, Record *record);
+  RC update_record(Trx *trx, Record *record, const Value *value);
   RC visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor);
   RC get_record(const RID &rid, Record &record);
 

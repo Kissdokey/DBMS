@@ -15,8 +15,10 @@ See the Mulan PSL v2 for more details. */
 #include "sql/executor/command_executor.h"
 #include "event/sql_event.h"
 #include "sql/stmt/stmt.h"
+#include "sql/executor/update_executor.h"
 #include "sql/executor/create_index_executor.h"
 #include "sql/executor/create_table_executor.h"
+#include "sql/executor/drop_table_executor.h"
 #include "sql/executor/desc_table_executor.h"
 #include "sql/executor/help_executor.h"
 #include "sql/executor/show_tables_executor.h"
@@ -29,7 +31,6 @@ See the Mulan PSL v2 for more details. */
 RC CommandExecutor::execute(SQLStageEvent *sql_event)
 {
   Stmt *stmt = sql_event->stmt();
-
   switch (stmt->type()) {
     case StmtType::CREATE_INDEX: {
       CreateIndexExecutor executor;
@@ -41,9 +42,8 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
       return executor.execute(sql_event);
     } break;
     case StmtType::DROP_TABLE: {
-      const DropTable& drop_table = sql->sstr[sql->q_size-1].drop_table; // 拿到要drop 的表
-      rc = handler_->drop_table(current_db,drop_table.relation_name); // 调用drop table接口，drop table要在handler中实现
-      snprintf(response,sizeof(response),"%s\n", rc == RC::SUCCESS ? "SUCCESS" : "FAILURE"); // 返回结果，带不带换行符都可以
+      DropTableExecutor executor;
+      return executor.execute(sql_event);
     } break;
     case StmtType::DESC_TABLE: {
       DescTableExecutor executor;
@@ -73,6 +73,7 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
 
     case StmtType::SET_VARIABLE: {
       SetVariableExecutor executor;
+      std::cout<<"test";
       return executor.execute(sql_event);
     }
 
@@ -80,7 +81,10 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
       LoadDataExecutor executor;
       return executor.execute(sql_event);
     }
-
+    case StmtType::UPDATE: {
+      UpdateExecutor executor;
+      return executor.execute(sql_event);
+    }
     case StmtType::EXIT: {
       return RC::SUCCESS;
     }
