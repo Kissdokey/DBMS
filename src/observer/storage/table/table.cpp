@@ -237,8 +237,36 @@ RC Table::insert_record(Record &record)
   }
   return rc;
 }
-RC Table::update_record(Trx *trx, Record *record)
+RC Table::update_record(Trx *trx, Record *record, const char *attribute_name, const Value *value)
 {
+  // Update the record
+  const int normal_field_start_index = table_meta_.sys_field_num();
+  for (int i = normal_field_start_index; i < table_meta_.field_num(); i++) {
+    const FieldMeta *field = table_meta_.field(i);
+    if (0 != strcmp(field->name(), attribute_name)) {
+      continue;
+    }
+
+    if (field->type() != value->attr_type()) {
+      LOG_ERROR("Invalid value type. table name =%s, field name=%s, type=%d, but given=%d",
+          table_meta_.name(),
+          field->name(),
+          field->type(),
+          value->attr_type());
+      return RC::SCHEMA_FIELD_TYPE_MISMATCH;
+    }
+
+    size_t copy_len = field->len();
+    if (field->type() == CHARS) {
+      const size_t data_len = strlen((const char *)value->data());
+      if (copy_len > data_len) {
+        copy_len = data_len + 1;
+      }
+    }
+    //最精髓的一句
+    memcpy(record->data() + field->offset(), value->data(), copy_len);
+    break;
+  }
   RC rc = RC::SUCCESS;
   if (trx != nullptr) {
     // TODO: trx support update record
@@ -247,6 +275,8 @@ RC Table::update_record(Trx *trx, Record *record)
   }
   return rc;
 }
+
+
 RC Table::visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor)
 {
   return record_handler_->visit_record(rid, readonly, visitor);

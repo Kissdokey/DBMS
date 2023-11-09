@@ -23,35 +23,29 @@ class FilterStmt;
  * @brief 更新语句
  * @ingroup Statement
  */
-class UpdateStmt : public Stmt 
+class UpdateStmt : public Stmt
 {
 public:
   UpdateStmt() = default;
-  UpdateStmt(Table *table, Value *values, int value_amount, FilterStmt *filter_stmt);
+  UpdateStmt(Table *table, Value *values, std::string attribute_name, int value_amount, FilterStmt *filter_stmt);
   ~UpdateStmt() override;
   StmtType type() const override { return StmtType::UPDATE; }
+
 public:
   static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
 
 public:
-  Table *table() const
-  {
-    return table_;
-  }
-  Value *values() const
-  {
-    return values_;
-  }
-  int value_amount() const
-  {
-    return value_amount_;
-  }
-  
+  Table      *table() const { return table_; }
+  Value      *values() const { return values_; }
+  int         value_amount() const { return value_amount_; }
+  std::string attribute_name() const { return attribute_name_; }
+
   FilterStmt *filter_stmt() const { return filter_stmt_; }
 
 private:
-  Table *table_ = nullptr;
-  Value *values_ = nullptr;
-  int value_amount_ = 0;
-  FilterStmt *filter_stmt_ = nullptr;
+  Table      *table_  = nullptr;
+  Value      *values_ = nullptr;
+  std::string attribute_name_;
+  int         value_amount_ = 0;
+  FilterStmt *filter_stmt_  = nullptr;
 };

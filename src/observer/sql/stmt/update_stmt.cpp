@@ -18,8 +18,8 @@ See the Mulan PSL v2 for more details. */
 #include "storage/table/table.h"
 #include "sql/stmt/update_stmt.h"
 
-UpdateStmt::UpdateStmt(Table *table, Value *values, int value_amount, FilterStmt *filter_stmt)
-  : table_ (table), values_(values), value_amount_(value_amount), filter_stmt_(filter_stmt)
+UpdateStmt::UpdateStmt(Table *table, Value *values,std::string attribute_name, int value_amount, FilterStmt *filter_stmt)
+  : table_ (table), values_(values),attribute_name_(attribute_name), value_amount_(value_amount), filter_stmt_(filter_stmt)
 {}
 
 UpdateStmt::~UpdateStmt()
@@ -70,8 +70,10 @@ RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
     LOG_WARN("failed to create filter statement. rc=%d:%s", rc, strrc(rc));
     return rc;
   }
+
+    // 遍历当前的所有数据，插入这个索引
   Value *values = const_cast<Value*>(&update_sql.value);
-  stmt = new UpdateStmt(table, values, 1, filter_stmt);
+  stmt = new UpdateStmt(table,values,update_sql.attribute_name,1, filter_stmt);
 
   return RC::SUCCESS;
 }
