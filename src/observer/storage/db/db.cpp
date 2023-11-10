@@ -88,7 +88,8 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfoS
   // 文件路径可以移到Table模块
   std::string table_file_path = table_meta_file(path_.c_str(), table_name);
   Table *table = new Table();
-  rc = table->create(next_table_id_++, table_file_path.c_str(), table_name, path_.c_str(), attribute_count, attributes);
+  int32_t table_id = next_table_id_++;
+  rc = table->create(table_id, table_file_path.c_str(), table_name, path_.c_str(), attribute_count, attributes);
   if (rc != RC::SUCCESS) {
     LOG_ERROR("Failed to create table %s.", table_name);
     delete table;
@@ -96,23 +97,28 @@ RC Db::create_table(const char *table_name, int attribute_count, const AttrInfoS
   }
 
   opened_tables_[table_name] = table;
-  LOG_INFO("Create table success. table name=%s", table_name);
+  LOG_INFO("Create table success. table name=%s, table_id:%d", table_name, table_id);
   return RC::SUCCESS;
 }
-RC Db::drop_table(const char* table_name)
-{
-    auto it = opened_tables_.find(table_name);
-    if (it == opened_tables_.end())
-    {
-        return RC::SCHEMA_TABLE_NOT_EXIST; // 找不到表，要返回错误，测试程序中也会校验这种场景
-    }
-    Table* table = it->second;
-    RC rc = table->destroy(path_.c_str()); // 让表自己销毁资源
-    if(rc != RC::SUCCESS) return rc;
-    opened_tables_.erase(it); // 删除成功的话，从表list中将它删除
-    delete table;
-    return RC::SUCCESS;
+
+RC Db::drop_table(const char* table_name){
+  RC rc = RC::SUCCESS;
+
+  auto it = opened_tables_.find(table_name);
+  if(it == opened_tables_.end()) {
+    return RC::SCHEMA_TABLE_NOT_EXIST; 
+  }
+  Table *table = it->second;
+  rc = table->destroy(path_.c_str());
+  if (rc != RC::SUCCESS) return rc;
+
+  opened_tables_.erase(it);
+
+  delete table;
+  return RC::SUCCESS;
 }
+
+
 Table *Db::find_table(const char *table_name) const
 {
   std::unordered_map<std::string, Table *>::const_iterator iter = opened_tables_.find(table_name);
@@ -154,13 +160,12 @@ RC Db::open_all_tables()
     if (opened_tables_.count(table->name()) != 0) {
       delete table;
       LOG_ERROR("Duplicate table with difference file name. table=%s, the other filename=%s",
-          table->name(),
-          filename.c_str());
+          table->name(), filename.c_str());
       return RC::INTERNAL;
     }
 
     if (table->table_id() >= next_table_id_) {
-      next_table_id_ = table->table_id();
+      next_table_id_ = table->table_id() + 1;
     }
     opened_tables_[table->name()] = table;
     LOG_INFO("Open table: %s, file: %s", table->name(), filename.c_str());

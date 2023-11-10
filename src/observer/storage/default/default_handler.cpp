@@ -117,7 +117,7 @@ RC DefaultHandler::create_db(const char *dbname)
 
 RC DefaultHandler::drop_db(const char *dbname)
 {
-  return RC::SUCCESS;
+  return RC::INTERNAL;
 }
 
 RC DefaultHandler::open_db(const char *dbname)
@@ -150,12 +150,12 @@ RC DefaultHandler::open_db(const char *dbname)
 
 RC DefaultHandler::close_db(const char *dbname)
 {
-  return RC::UNIMPLENMENT;
+  return RC::UNIMPLEMENT;
 }
 
 RC DefaultHandler::execute(const char *sql)
 {
-  return RC::UNIMPLENMENT;
+  return RC::UNIMPLEMENT;
 }
 
 RC DefaultHandler::create_table(
@@ -170,11 +170,7 @@ RC DefaultHandler::create_table(
 
 RC DefaultHandler::drop_table(const char *dbname, const char *relation_name)
 {
-   Db *db = find_db(dbname);  // 这是原有的代码，用来查找对应的数据库，不过目前只有一个库
-  if(db == nullptr) {
-    return RC::SCHEMA_DB_NOT_OPENED;
-  }
-  return db->drop_table(relation_name); // 直接调用db的删掉接口
+  return RC::UNIMPLEMENT;
 }
 
 Db *DefaultHandler::find_db(const char *dbname) const

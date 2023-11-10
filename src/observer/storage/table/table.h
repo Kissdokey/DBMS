@@ -13,8 +13,8 @@ See the Mulan PSL v2 for more details. */
 //
 
 #pragma once
+
 #include <functional>
-#include "storage/common/meta_util.h"
 #include "storage/table/table_meta.h"
 
 struct RID;
@@ -53,6 +53,11 @@ public:
             const char *base_dir, 
             int attribute_count, 
             const AttrInfoSqlNode attributes[]);
+
+  /**
+   * 删除一个表
+   * @param dir xxx
+   */
   RC destroy(const char* dir);
 
   /**
@@ -78,6 +83,7 @@ public:
    */
   RC insert_record(Record &record);
   RC delete_record(const Record &record);
+  // 更新
   RC update_record(Trx *trx, Record *record, const char *attribute_name, const Value *value);
   RC visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor);
   RC get_record(const RID &rid, Record &record);
@@ -85,7 +91,7 @@ public:
   RC recover_insert_record(Record &record);
 
   // TODO refactor
-  RC create_index(Trx *trx, const FieldMeta *field_meta, const char *index_name);
+  RC create_index(Trx *trx, std::vector<FieldMeta> field_metas, const char *index_name, bool unique);
 
   RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly);
 
@@ -111,7 +117,8 @@ private:
 
 public:
   Index *find_index(const char *index_name) const;
-  Index *find_index_by_field(const char *field_name) const;
+  // Index *find_index_by_field(const char *field_name) const;
+  Index *find_index_by_fields(std::vector<const char *> fields) const;
 
 private:
   std::string base_dir_;

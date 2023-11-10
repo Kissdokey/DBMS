@@ -156,7 +156,7 @@ RC RecordPageHandler::init_empty_page(DiskBufferPool &buffer_pool, PageNum page_
   memset(bitmap_, 0, page_bitmap_size(page_header_->record_capacity));
 
   if ((ret = buffer_pool.flush_page(*frame_)) != RC::SUCCESS) {
-    LOG_ERROR("Failed to flush page header %d:%d.", page_num);
+    LOG_ERROR("Failed to flush page header %d:%d.", buffer_pool.file_desc(), page_num);
     return ret;
   }
 
@@ -183,7 +183,7 @@ RC RecordPageHandler::insert_record(const char *data, RID *rid)
   ASSERT(readonly_ == false, "cannot insert record into page while the page is readonly");
 
   if (page_header_->record_num == page_header_->record_capacity) {
-    LOG_WARN("Page is full, page_num %d:%d.", frame_->page_num());
+    LOG_WARN("Page is full, page_num %d:%d.", disk_buffer_pool_->file_desc(), frame_->page_num());
     return RC::RECORD_NOMEM;
   }
 
@@ -256,6 +256,13 @@ RC RecordPageHandler::delete_record(const RID *rid)
     return RC::RECORD_NOT_EXIST;
   }
 }
+
+// insert
+RC RecordPageHandler::update_record(const char *data, RID *rid){
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  return RC::SUCCESS;
+}
+
 
 RC RecordPageHandler::get_record(const RID *rid, Record *rec)
 {
@@ -456,7 +463,10 @@ RC RecordFileHandler::get_record(RecordPageHandler &page_handler, const RID *rid
     return RC::INVALID_ARGUMENT;
   }
 
+  std::cout<<"get record"<<" "<<rid->page_num<<" "<<rid->slot_num<<std::endl;
+
   RC ret = page_handler.init(*disk_buffer_pool_, rid->page_num, readonly);
+
   if (OB_FAIL(ret)) {
     LOG_ERROR("Failed to init record page handler.page number=%d", rid->page_num);
     return ret;
@@ -470,6 +480,9 @@ RC RecordFileHandler::visit_record(const RID &rid, bool readonly, std::function<
   RecordPageHandler page_handler;
 
   RC rc = page_handler.init(*disk_buffer_pool_, rid.page_num, readonly);
+
+  std::cout<<"visit record"<<" "<<rid.page_num<<" "<<rid.slot_num<<std::endl;
+
   if (OB_FAIL(rc)) {
     LOG_ERROR("Failed to init record page handler.page number=%d", rid.page_num);
     return rc;
