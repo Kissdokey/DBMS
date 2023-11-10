@@ -43,10 +43,11 @@ RC ResolveStage::handle_request(SQLStageEvent *sql_event)
     return rc;
   }
 
-  ParsedSqlNode *sql_node = sql_event->sql_node().get();
+  // wjy: std::unique_ptr<TYPE>::get()函数，会返回指向TYPE类型的指针，即TYPE* 类型
+  ParsedSqlNode *sql_node = sql_event->sql_node().get();  
   Stmt *stmt = nullptr;
   rc = Stmt::create_stmt(db, *sql_node, stmt);
-  if (rc != RC::SUCCESS && rc != RC::UNIMPLENMENT) {
+  if (rc != RC::SUCCESS && rc != RC::UNIMPLEMENT) {
     LOG_WARN("failed to create stmt. rc=%d:%s", rc, strrc(rc));
     sql_result->set_return_code(rc);
     return rc;

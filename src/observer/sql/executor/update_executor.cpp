@@ -13,7 +13,6 @@ See the Mulan PSL v2 for more details. */
 //
 
 #include "sql/executor/update_executor.h"
-
 #include "session/session.h"
 #include "common/log/log.h"
 #include "storage/table/table.h"
