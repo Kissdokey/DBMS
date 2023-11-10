@@ -56,7 +56,8 @@ RC UpdateExecutor::execute(SQLStageEvent *sql_event)
   // Todo: 每个字段数据根据op进行比较，比较方式根据什么比较呢？需不需要case判断类型；左右数据类型判断，是字段还是值；
   Record record;
   while (scanner.has_next()) {
-    rc = scanner.next(record);
+    bool flag = true;
+    rc        = scanner.next(record);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to scan records while creating index.");
       return rc;
@@ -75,17 +76,30 @@ RC UpdateExecutor::execute(SQLStageEvent *sql_event)
       //     values->attr_type());
       //   return RC::SCHEMA_FIELD_TYPE_MISMATCH;
       // }
-      bool flag = false;
       if (hasFilter) {
         // 有筛选条件的，按照值和op进行筛选，且有and操作别忘记了
-        const char *left  = (*filter_units.begin())->left().field.field_name();
-        const char *right = (*filter_units.begin())->right().value.data();
-        CompOp      op    = (*filter_units.begin())->comp();
-        // 获取到关键信息，参考delete和insert，看看如何操作表数据
-        const char *table_value = (const char *)(record.data() + field->offset());
-        if (strcmp(right, table_value) == 0) {
-          flag = true;
+        for (int i = 0; i < filter_units.size(); i++) {
+          bool     isLeft = filter_units[i]->left().is_attr ? true : false;
+          AttrType type   = field->type();
+          AttrType filter_type =
+              isLeft ? filter_units[i]->left().field.attr_type() : filter_units[i]->right().field.attr_type();
+          if (type != filter_type) {
+            continue;
+          }
+          const char *left  = filter_units[i]->left().is_attr ? filter_units[i]->left().field.field_name()
+                                                              : filter_units[i]->left().value.data();
+          const char *right = filter_units[i]->right().is_attr ? filter_units[i]->right().field.field_name()
+                                                               : filter_units[i]->right().value.data();
+          CompOp      op    = filter_units[i]->comp();
+          // 获取到关键信息，参考delete和insert，看看如何操作表数据
+          // left 和right必须得有一个是字段，看名字是否对的上
+          if (strcmp(isLeft ? left : right, field->name()) == 0) {
+            if (!ifFilterFit(type, record.data() + field->offset(), isLeft ? right : left, op)) {
+              flag = false;
+            }
+          }
         }
+
         // switch (field->type()) {
         //   case AttrType::CHARS: {
         //     if (0 == strcmp(table_value, b)) {
@@ -104,16 +118,84 @@ RC UpdateExecutor::execute(SQLStageEvent *sql_event)
         //   default: break;
         // }
       }
-      if (flag || !hasFilter) {
-        rc = update_stmt->table()->update_record(trx, &record, update_stmt->attribute_name().c_str(), values);
-        if (rc != RC::SUCCESS) {
-          LOG_WARN("failed to insert record into index while creating index.");
-          return rc;
-        }
+    }
+    if (flag || !hasFilter) {
+      rc = update_stmt->table()->update_record(trx, &record, update_stmt->attribute_name().c_str(), values);
+      if (rc != RC::SUCCESS) {
+        LOG_WARN("failed to insert record into index while creating index.");
+        return rc;
       }
     }
   }
   scanner.close_scan();
   rc = RC::SUCCESS;
   return rc;
+}
+// EQUAL_TO,     ///< "="
+// LESS_EQUAL,   ///< "<="
+// NOT_EQUAL,    ///< "<>"
+// LESS_THAN,    ///< "<"
+// GREAT_EQUAL,  ///< ">="
+// GREAT_THAN,   ///< ">"
+bool UpdateExecutor::ifFilterFit(AttrType type, const char *value, const char *filter_value, CompOp op)
+{
+  switch (type) {
+    case AttrType::INTS: {
+      int *table_value = (int *)(value);
+      int  filter      = atoi(filter_value);
+      if (op == CompOp::EQUAL_TO) {
+        std::cout << (*table_value == filter) << *table_value << filter << endl;
+        return *table_value == filter;
+      }
+      if (op == CompOp::GREAT_EQUAL) {
+        return *table_value >= filter;
+      }
+      if (op == CompOp::LESS_EQUAL) {
+        return *table_value <= filter;
+      }
+      if (op == CompOp::GREAT_THAN) {
+        return *table_value > filter;
+      }
+      if (op == CompOp::LESS_THAN) {
+        return *table_value < filter;
+      }
+      if (op == CompOp::NOT_EQUAL) {
+        return *table_value != filter;
+      }
+    } break;
+    case AttrType::CHARS: {
+      return strcmp(value, filter_value) == 0 ? true : false;
+
+    } break;
+    case AttrType::FLOATS: {
+      float *table_value = (float *)(value);
+      float  filter      = atof(filter_value);
+      if (op == CompOp::EQUAL_TO) {
+        std::cout << (*table_value == filter) << *table_value << filter << endl;
+        return *table_value == filter;
+      }
+      if (op == CompOp::GREAT_EQUAL) {
+        return *table_value >= filter;
+      }
+      if (op == CompOp::LESS_EQUAL) {
+        return *table_value <= filter;
+      }
+      if (op == CompOp::GREAT_THAN) {
+        return *table_value > filter;
+      }
+      if (op == CompOp::LESS_THAN) {
+        return *table_value < filter;
+      }
+      if (op == CompOp::NOT_EQUAL) {
+        return *table_value != filter;
+      }
+    } break;
+    case AttrType::DATES: {
+      return false;
+    } break;
+    default: {
+      return false;
+    } break;
+  }
+
 }
