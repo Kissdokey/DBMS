@@ -142,25 +142,25 @@ bool UpdateExecutor::ifFilterFit(AttrType type, const char *value, const char *f
   switch (type) {
     case AttrType::INTS: {
       int *table_value = (int *)(value);
-      int  filter      = atoi(filter_value);
+      int *  filter      = (int*)(filter_value);
       if (op == CompOp::EQUAL_TO) {
-        std::cout << (*table_value == filter) << *table_value << filter << endl;
-        return *table_value == filter;
+        std::cout << (*table_value == *filter) << *table_value << *filter << endl;
+        return *table_value == *filter;
       }
       if (op == CompOp::GREAT_EQUAL) {
-        return *table_value >= filter;
+        return *table_value >= *filter;
       }
       if (op == CompOp::LESS_EQUAL) {
-        return *table_value <= filter;
+        return *table_value <= *filter;
       }
       if (op == CompOp::GREAT_THAN) {
-        return *table_value > filter;
+        return *table_value > *filter;
       }
       if (op == CompOp::LESS_THAN) {
-        return *table_value < filter;
+        return *table_value < *filter;
       }
       if (op == CompOp::NOT_EQUAL) {
-        return *table_value != filter;
+        return *table_value != *filter;
       }
     } break;
     case AttrType::CHARS: {
@@ -169,25 +169,24 @@ bool UpdateExecutor::ifFilterFit(AttrType type, const char *value, const char *f
     } break;
     case AttrType::FLOATS: {
       float *table_value = (float *)(value);
-      float  filter      = atof(filter_value);
-      if (op == CompOp::EQUAL_TO) {
-        std::cout << (*table_value == filter) << *table_value << filter << endl;
-        return *table_value == filter;
+      float  *filter      = (float *)(filter_value);
+       if (op == CompOp::EQUAL_TO) {
+        return *table_value == *filter;
       }
       if (op == CompOp::GREAT_EQUAL) {
-        return *table_value >= filter;
+        return *table_value >= *filter;
       }
       if (op == CompOp::LESS_EQUAL) {
-        return *table_value <= filter;
+        return *table_value <= *filter;
       }
       if (op == CompOp::GREAT_THAN) {
-        return *table_value > filter;
+        return *table_value > *filter;
       }
       if (op == CompOp::LESS_THAN) {
-        return *table_value < filter;
+        return *table_value < *filter;
       }
       if (op == CompOp::NOT_EQUAL) {
-        return *table_value != filter;
+        return *table_value != *filter;
       }
     } break;
     case AttrType::DATES: {
